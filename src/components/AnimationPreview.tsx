@@ -39,6 +39,7 @@ const AnimationPreview: React.FC<AnimationPreviewProps> = ({
                     title="Educational Animation"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
+                    frameBorder="0"
                   />
                 </div>
               </div>

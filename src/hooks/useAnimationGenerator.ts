@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { toast } from "sonner";
 
-// Updated to a reliable Creative Commons animation video
-const SAMPLE_ANIMATION_URL = "https://www.youtube.com/embed/dQw4w9WgXcQ"; // Creative Commons animation video
+// Using a reliable public domain animation from Pixabay instead of YouTube
+const SAMPLE_ANIMATION_URL = "https://player.vimeo.com/video/435127897"; // Public domain animation video
 
 export type StepStatus = "pending" | "active" | "complete";
 

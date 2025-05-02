@@ -6,8 +6,11 @@ import AnimationPreview from "@/components/AnimationPreview";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 
-// Mock animation URL for demo purposes
-const SAMPLE_ANIMATION_URL = "https://www.youtube.com/embed/MUQfKFzIOeU";
+// Mock animation URL - updated to use a copyright-free video
+const SAMPLE_ANIMATION_URL = "https://www.youtube.com/embed/M9ht1e4B5UQ"; // Creative Commons animation video
+
+// Define the status type to fix TypeScript errors
+type StepStatus = "pending" | "active" | "complete";
 
 // Initial storyboard steps
 const initialSteps = [
@@ -16,37 +19,46 @@ const initialSteps = [
     title: "Concept Analysis",
     description: "Analyzing the concept and breaking it down into key components",
     visualDescription: "",
-    status: "pending" as const
+    status: "pending" as StepStatus
   },
   {
     id: 2,
     title: "Content Structure",
     description: "Organizing the learning material in a logical sequence",
     visualDescription: "",
-    status: "pending" as const
+    status: "pending" as StepStatus
   },
   {
     id: 3,
     title: "Visual Storyboarding",
     description: "Creating visual representations for each key concept",
     visualDescription: "",
-    status: "pending" as const
+    status: "pending" as StepStatus
   },
   {
     id: 4,
     title: "Script Generation",
     description: "Creating narration script with appropriate language for the target audience",
     visualDescription: "",
-    status: "pending" as const
+    status: "pending" as StepStatus
   },
   {
     id: 5,
     title: "Animation Rendering",
     description: "Generating the final animation with synchronized narration",
     visualDescription: "",
-    status: "pending" as const
+    status: "pending" as StepStatus
   }
 ];
+
+// Define step interface to properly type our state
+interface StoryboardStep {
+  id: number;
+  title: string;
+  description: string;
+  visualDescription: string;
+  status: StepStatus;
+}
 
 const AnimationGenerator: React.FC = () => {
   // Form state
@@ -58,7 +70,7 @@ const AnimationGenerator: React.FC = () => {
   // Process state
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [steps, setSteps] = useState(initialSteps);
+  const [steps, setSteps] = useState<StoryboardStep[]>(initialSteps);
   const [isAnimationReady, setIsAnimationReady] = useState(false);
   const [animationUrl, setAnimationUrl] = useState("");
 
@@ -75,7 +87,7 @@ const AnimationGenerator: React.FC = () => {
     setCurrentStep(0);
     setIsAnimationReady(false);
     setAnimationUrl("");
-    setSteps(initialSteps.map(step => ({ ...step, status: "pending", visualDescription: "" })));
+    setSteps(initialSteps.map(step => ({ ...step, status: "pending" as StepStatus, visualDescription: "" })));
     
     // Simulate the generation process with delays
     processSteps();
@@ -89,7 +101,7 @@ const AnimationGenerator: React.FC = () => {
       setSteps(prev => 
         prev.map(step => 
           step.id === i + 1 
-            ? { ...step, status: "active" } 
+            ? { ...step, status: "active" as StepStatus } 
             : step
         )
       );
@@ -136,7 +148,7 @@ const AnimationGenerator: React.FC = () => {
       setSteps(prev => 
         prev.map(step => 
           step.id === i + 1 
-            ? { ...step, status: "complete", visualDescription } 
+            ? { ...step, status: "complete" as StepStatus, visualDescription } 
             : step
         )
       );

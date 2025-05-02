@@ -4,12 +4,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, Clock, Loader2 } from "lucide-react";
 
+type StepStatus = "pending" | "active" | "complete";
+
 interface StoryboardStep {
   id: number;
   title: string;
   description: string;
   visualDescription: string;
-  status: "pending" | "active" | "complete";
+  status: StepStatus;
 }
 
 interface StoryboardPreviewProps {

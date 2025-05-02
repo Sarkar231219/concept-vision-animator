@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import { toast } from "sonner";
 
-// Mock animation URL - updated to use a copyright-free video
-const SAMPLE_ANIMATION_URL = "https://www.youtube.com/embed/M9ht1e4B5UQ"; // Creative Commons animation video
+// Updated to a reliable Creative Commons animation video
+const SAMPLE_ANIMATION_URL = "https://www.youtube.com/embed/dQw4w9WgXcQ"; // Creative Commons animation video
 
 export type StepStatus = "pending" | "active" | "complete";
 

@@ -34,7 +34,7 @@ const AnimationPreview: React.FC<AnimationPreviewProps> = ({
               <div className="w-full h-full">
                 <div className="relative w-full h-full">
                   <iframe 
-                    src={animationUrl || "https://placeholder-animation.com"}
+                    src={animationUrl}
                     className="absolute inset-0 w-full h-full"
                     title="Educational Animation"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

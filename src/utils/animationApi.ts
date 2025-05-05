@@ -1,6 +1,6 @@
 
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, callFunction } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
 import { AnimationFormData } from "@/types/animation";
 
@@ -71,7 +71,8 @@ export const updateRequestWithVideo = async (id: string, videoUrl: string) => {
       .from('animation_requests')
       .update({
         status: 'completed',
-        video_url: videoUrl
+        video_url: videoUrl,
+        updated_at: new Date().toISOString()
       })
       .eq('id', id);
 
@@ -81,5 +82,34 @@ export const updateRequestWithVideo = async (id: string, videoUrl: string) => {
   } catch (error) {
     console.error('Error updating request with video:', error);
     return false;
+  }
+};
+
+// Call the edge function to generate an animation
+export const generateAnimation = async (id: string, title: string, description: string | null, educationLevel: string) => {
+  try {
+    const response = await callFunction('generate-educational-video', {
+      id,
+      title,
+      description,
+      education_level: educationLevel
+    });
+    
+    if (!response || !response.videoUrl) {
+      throw new Error('No video URL returned');
+    }
+    
+    // Update the database with the new video URL
+    await updateRequestWithVideo(id, response.videoUrl);
+    
+    return response.videoUrl;
+  } catch (error) {
+    console.error('Error generating animation:', error);
+    toast.error('Failed to generate animation');
+    
+    // Update status to failed
+    await updateRequestStatus(id, 'failed');
+    
+    return null;
   }
 };

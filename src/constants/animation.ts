@@ -1,7 +1,4 @@
 
-// Sample animation placeholder (used while actual animation is being generated)
-export const PLACEHOLDER_ANIMATION_URL = "https://player.vimeo.com/video/435127897";
-
 // Initial storyboard steps
 export const initialSteps = [
   {

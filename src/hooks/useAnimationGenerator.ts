@@ -2,12 +2,12 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { AnimationFormData, StoryboardStep } from "@/types/animation";
-import { initialSteps, PLACEHOLDER_ANIMATION_URL } from "@/constants/animation";
+import { initialSteps } from "@/constants/animation";
 import { 
   saveAnimationRequest, 
   pollAnimationStatus, 
   updateRequestStatus, 
-  updateRequestWithVideo 
+  generateAnimation 
 } from "@/utils/animationApi";
 import { generateVisualDescription, updateStepStatus } from "@/utils/storyboardUtils";
 
@@ -35,7 +35,7 @@ export const useAnimationGenerator = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Simulated generation process
+  // Process for generating the animation
   const handleGenerate = async () => {
     if (!formData.title.trim()) {
       toast.error("Please enter a concept title");
@@ -65,43 +65,60 @@ export const useAnimationGenerator = () => {
   };
 
   const processSteps = async (requestId: string) => {
-    // Process each step with a delay to simulate AI processing
-    for (let i = 0; i < steps.length; i++) {
-      // Set current step to active
-      setCurrentStep(i);
-      setSteps(prev => 
-        updateStepStatus(prev, i + 1, "active")
-      );
+    try {
+      // Process each step with a delay to simulate AI processing
+      for (let i = 0; i < steps.length; i++) {
+        // Set current step to active
+        setCurrentStep(i);
+        setSteps(prev => 
+          updateStepStatus(prev, i + 1, "active")
+        );
 
-      // Update status to processing after first step starts
-      if (i === 0) {
-        await updateRequestStatus(requestId, 'processing');
+        // Update status to processing after first step starts
+        if (i === 0) {
+          await updateRequestStatus(requestId, 'processing');
+        }
+
+        // Wait for a few seconds to simulate processing
+        await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000));
+
+        // Generate visual descriptions based on the step
+        const visualDescription = generateVisualDescription(i, formData);
+
+        // Mark step as complete and add visual description
+        setSteps(prev => 
+          updateStepStatus(prev, i + 1, "complete", visualDescription)
+        );
       }
 
-      // Wait for a few seconds to simulate processing
-      await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 1000));
-
-      // Generate visual descriptions based on the step
-      const visualDescription = generateVisualDescription(i, formData);
-
-      // Mark step as complete and add visual description
-      setSteps(prev => 
-        updateStepStatus(prev, i + 1, "complete", visualDescription)
+      // Generate the animation using the edge function
+      const videoUrl = await generateAnimation(
+        requestId,
+        formData.title,
+        formData.description,
+        formData.educationLevel
       );
+
+      if (!videoUrl) {
+        toast.error("Failed to generate animation");
+        setIsGenerating(false);
+        return;
+      }
+
+      // Set animation as ready
+      setIsAnimationReady(true);
+      setAnimationUrl(videoUrl);
+      setIsGenerating(false);
+      
+      toast.success("Your educational animation is ready!");
+    } catch (error) {
+      console.error("Error processing animation steps:", error);
+      toast.error("An error occurred while generating the animation");
+      setIsGenerating(false);
+      
+      // Update status to failed
+      await updateRequestStatus(requestId, 'failed');
     }
-
-    // For demo purposes, we'll use a placeholder video URL
-    const videoUrl = PLACEHOLDER_ANIMATION_URL;
-    
-    // Update the request with the video URL
-    await updateRequestWithVideo(requestId, videoUrl);
-
-    // Set animation as ready
-    setIsAnimationReady(true);
-    setAnimationUrl(videoUrl);
-    setIsGenerating(false);
-    
-    toast.success("Your educational animation is ready!");
   };
 
   const handleEditAnimation = () => {

@@ -1,8 +1,11 @@
+
 import { useState } from "react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { v4 as uuidv4 } from "uuid";
 
-// Using a reliable public domain animation from Pixabay instead of YouTube
-const SAMPLE_ANIMATION_URL = "https://player.vimeo.com/video/435127897"; // Public domain animation video
+// Sample animation placeholder (used while actual animation is being generated)
+const PLACEHOLDER_ANIMATION_URL = "https://player.vimeo.com/video/435127897";
 
 export type StepStatus = "pending" | "active" | "complete";
 
@@ -60,6 +63,18 @@ export interface AnimationFormData {
   language: string;
 }
 
+export interface AnimationRequest {
+  id: string;
+  title: string;
+  description: string | null;
+  education_level: string;
+  language: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  video_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export const useAnimationGenerator = () => {
   // Form state
   const [formData, setFormData] = useState<AnimationFormData>({
@@ -75,13 +90,69 @@ export const useAnimationGenerator = () => {
   const [steps, setSteps] = useState<StoryboardStep[]>(initialSteps);
   const [isAnimationReady, setIsAnimationReady] = useState(false);
   const [animationUrl, setAnimationUrl] = useState("");
+  const [requestId, setRequestId] = useState<string | null>(null);
 
   const updateFormData = (field: keyof AnimationFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Save the animation request to Supabase
+  const saveAnimationRequest = async () => {
+    try {
+      const id = uuidv4();
+      
+      const { error } = await supabase.from('animation_requests').insert({
+        id,
+        title: formData.title,
+        description: formData.description || null,
+        education_level: formData.educationLevel,
+        language: formData.language,
+        status: 'pending',
+        video_url: null
+      });
+
+      if (error) throw error;
+      
+      setRequestId(id);
+      return id;
+    } catch (error) {
+      console.error('Error saving animation request:', error);
+      toast.error('Failed to save animation request');
+      return null;
+    }
+  };
+
+  // Poll for animation updates
+  const pollAnimationStatus = async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('animation_requests')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+
+      if (data.status === 'completed' && data.video_url) {
+        setIsAnimationReady(true);
+        setAnimationUrl(data.video_url);
+        setIsGenerating(false);
+        return true;
+      } else if (data.status === 'failed') {
+        toast.error('Animation generation failed');
+        setIsGenerating(false);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Error polling animation status:', error);
+      return false;
+    }
+  };
+
   // Simulated generation process
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!formData.title.trim()) {
       toast.error("Please enter a concept title");
       return;
@@ -95,11 +166,19 @@ export const useAnimationGenerator = () => {
     setAnimationUrl("");
     setSteps(initialSteps.map(step => ({ ...step, status: "pending" as StepStatus, visualDescription: "" })));
     
+    // Save the animation request to Supabase
+    const requestId = await saveAnimationRequest();
+    
+    if (!requestId) {
+      setIsGenerating(false);
+      return;
+    }
+
     // Simulate the generation process with delays
-    processSteps();
+    await processSteps(requestId);
   };
 
-  const processSteps = async () => {
+  const processSteps = async (requestId: string) => {
     // Process each step with a delay to simulate AI processing
     for (let i = 0; i < steps.length; i++) {
       // Set current step to active
@@ -111,6 +190,14 @@ export const useAnimationGenerator = () => {
             : step
         )
       );
+
+      // Update status to processing after first step starts
+      if (i === 0) {
+        await supabase
+          .from('animation_requests')
+          .update({ status: 'processing' })
+          .eq('id', requestId);
+      }
 
       // Wait for a few seconds to simulate processing
       await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 1000));
@@ -160,9 +247,22 @@ export const useAnimationGenerator = () => {
       );
     }
 
+    // For demo purposes, we'll use a placeholder video URL
+    // In a real application, we would wait for the actual video to be generated
+    const videoUrl = PLACEHOLDER_ANIMATION_URL;
+    
+    // Update the request with the video URL
+    await supabase
+      .from('animation_requests')
+      .update({
+        status: 'completed',
+        video_url: videoUrl
+      })
+      .eq('id', requestId);
+
     // Set animation as ready
     setIsAnimationReady(true);
-    setAnimationUrl(SAMPLE_ANIMATION_URL);
+    setAnimationUrl(videoUrl);
     setIsGenerating(false);
     
     toast.success("Your educational animation is ready!");
@@ -181,6 +281,7 @@ export const useAnimationGenerator = () => {
     isAnimationReady,
     animationUrl,
     handleGenerate,
-    handleEditAnimation
+    handleEditAnimation,
+    requestId
   };
 };
